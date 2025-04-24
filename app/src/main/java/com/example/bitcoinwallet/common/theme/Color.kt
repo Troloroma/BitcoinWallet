@@ -1,4 +1,4 @@
-package com.example.bitcoinwallet.ui.theme
+package com.example.bitcoinwallet.common.theme
 
 import androidx.compose.ui.graphics.Color
 

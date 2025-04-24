@@ -5,43 +5,48 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.example.bitcoinwallet.ui.theme.BitcoinWalletTheme
+import androidx.lifecycle.ViewModelProvider
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.example.bitcoinwallet.app.app.App
+import com.example.bitcoinwallet.common.theme.BitcoinWalletTheme
+import com.example.bitcoinwallet.features.main.presentation.MainDestination
+import com.example.bitcoinwallet.navigation.Destinations
+import javax.inject.Inject
 
 class MainActivity : ComponentActivity() {
+    @Inject
+    lateinit var viewModelFactory: ViewModelProvider.Factory
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        (applicationContext as App).appComponent.injectMainActivity(this)
         super.onCreate(savedInstanceState)
+
         enableEdgeToEdge()
         setContent {
             BitcoinWalletTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    val navController = rememberNavController()
+                    NavHost(
+                        navController = navController,
+                        startDestination = Destinations.MainGraph.route
+                    ) {
+                        composable(Destinations.MainGraph.route) {
+                            MainDestination(
+                                viewModelFactory = viewModelFactory,
+                                navigateOnHistory = { navController.navigate(Destinations.MainGraph.route) }
+                            )
+                        }
+                    }
                 }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    BitcoinWalletTheme {
-        Greeting("Android")
     }
 }
