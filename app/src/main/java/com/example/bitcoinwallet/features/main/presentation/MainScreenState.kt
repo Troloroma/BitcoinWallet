@@ -1,7 +1,9 @@
 package com.example.bitcoinwallet.features.main.presentation
 
+import com.example.bitcoinwallet.features.main.presentation.model.MainEntity
+
 sealed class MainScreenState {
     data object Loading : MainScreenState()
-    data object Error : MainScreenState()
-    data object Success : MainScreenState()
+    data class Success(val data: MainEntity) : MainScreenState()
+    data class Error(val message: String) : MainScreenState()
 }

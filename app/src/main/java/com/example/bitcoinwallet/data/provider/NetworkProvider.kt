@@ -12,20 +12,21 @@ class NetworkProvider(
 ) {
     private val client = OkHttpClient.Builder().apply {
         readTimeout(READ_TIME_OUT, TimeUnit.SECONDS)
-        connectTimeout(CONNECT_TIME_OUT, TimeUnit.SECONDS)
-        HttpLoggingInterceptor().apply {
+        connectTimeout(
+            CONNECT_TIME_OUT, TimeUnit.SECONDS
+        ).addInterceptor(HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
-        }
+        })
     }.build()
 
     fun <T> provideRetrofit(
         clazz: Class<T>,
     ): T {
-        return Retrofit.Builder().baseUrl(host).client(client).addConverterFactory(
-                GsonConverterFactory.create(
-                    GsonBuilder().setLenient().create()
-                )
-            ).addConverterFactory(EnumConverterFactory()).build().create(clazz)
+        return Retrofit.Builder().baseUrl(host).client(client)
+            .addConverterFactory(PlainTextConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(GsonBuilder().setLenient().create()))
+            .addConverterFactory(EnumConverterFactory())
+            .build().create(clazz)
     }
 
     companion object {

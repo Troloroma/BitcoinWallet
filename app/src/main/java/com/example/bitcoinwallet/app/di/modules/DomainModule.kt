@@ -3,6 +3,7 @@ package com.example.bitcoinwallet.app.di.modules
 import com.example.bitcoinwallet.domain.MainInteractorImpl
 import com.example.bitcoinwallet.features.main.domain.MainInteractor
 import com.example.bitcoinwallet.features.main.domain.MainRepository
+import com.example.bitcoinwallet.features.main.domain.WalletRepository
 import dagger.Module
 import dagger.Provides
 
@@ -11,8 +12,10 @@ class DomainModule {
 
     @Provides
     fun provideMainInteractor(
-        mainRepository: MainRepository
+        mainRepository: MainRepository,
+        walletRepository: WalletRepository
     ): MainInteractor = MainInteractorImpl(
-        mainRepository
+        mainRepository,
+        walletRepository
     )
 }

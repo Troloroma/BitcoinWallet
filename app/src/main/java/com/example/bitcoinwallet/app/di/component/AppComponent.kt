@@ -3,6 +3,7 @@ package com.example.bitcoinwallet.app.di.component
 import android.app.Application
 import com.example.bitcoinwallet.MainActivity
 import com.example.bitcoinwallet.app.di.modules.AppModule
+import com.example.bitcoinwallet.app.di.modules.CryptoModule
 import com.example.bitcoinwallet.app.di.modules.DataModule
 import com.example.bitcoinwallet.app.di.modules.DomainModule
 import com.example.bitcoinwallet.app.di.modules.NetworkModule
@@ -18,7 +19,8 @@ import javax.inject.Singleton
         DataModule::class,
         DomainModule::class,
         NetworkModule::class,
-        ViewModelModule::class
+        ViewModelModule::class,
+        CryptoModule::class
     ]
 )
 interface AppComponent {

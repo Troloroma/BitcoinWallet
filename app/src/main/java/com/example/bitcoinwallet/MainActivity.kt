@@ -41,7 +41,6 @@ class MainActivity : ComponentActivity() {
                         composable(Destinations.MainGraph.route) {
                             MainDestination(
                                 viewModelFactory = viewModelFactory,
-                                navigateOnHistory = { navController.navigate(Destinations.MainGraph.route) }
                             )
                         }
                     }

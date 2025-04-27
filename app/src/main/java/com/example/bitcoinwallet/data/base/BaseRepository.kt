@@ -6,7 +6,6 @@ import com.example.bitcoinwallet.network.utils.exceptions.NO_ERROR_CODE
 import com.example.bitcoinwallet.network.utils.exceptions.NO_NETWORK_ERROR_CODE
 import com.example.bitcoinwallet.network.utils.exceptions.PARSE_ERROR
 import com.example.bitcoinwallet.network.utils.exceptions.PARSE_ERROR_CODE
-import com.example.bitcoinwallet.network.utils.models.ServerResponse
 import com.example.bitcoinwallet.network.utils.models.ResponseStatus
 import com.example.bitcoinwallet.network.utils.exceptions.NetworkException
 import com.example.bitcoinwallet.network.utils.exceptions.NoNetworkException
@@ -21,8 +20,6 @@ import retrofit2.HttpException
 import retrofit2.Response
 import java.net.UnknownHostException
 
-typealias Request<T> = suspend () -> Response<ServerResponse<T>>
-
 open class BaseRepository {
 
     protected suspend fun <K : Any> safeApiSuspendResultNoResponse(call: suspend () -> Response<K>?): ResponseStatus<K> {
@@ -30,9 +27,11 @@ open class BaseRepository {
         try {
             response = call.invoke()
             if (response != null && response.isSuccessful) {
+                Log.i("BaseRepository: ", response.body().toString())
                 return ResponseStatus.Success(response.body(), response.code())
             }
             val errorBody: Error? = response?.errorBody()?.parseError()
+            Log.e("BaseRepository: ", errorBody.toString())
             return ResponseStatus.ServerError(
                 NetworkException(
                     errorBody?.message, Throwable(REPOSITORY), errorBody?.code ?: NO_ERROR_CODE
