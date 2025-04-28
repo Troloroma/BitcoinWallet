@@ -1,4 +1,4 @@
-package com.example.bitcoinwallet.data.provider
+package com.example.bitcoinwallet.data.factories
 
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody

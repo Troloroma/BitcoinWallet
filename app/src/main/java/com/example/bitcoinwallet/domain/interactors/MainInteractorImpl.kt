@@ -1,9 +1,10 @@
-package com.example.bitcoinwallet.domain
+package com.example.bitcoinwallet.domain.interactors
 
 import android.util.Log
 import com.example.bitcoinwallet.common.Entity
 import com.example.bitcoinwallet.common.toBtcString
 import com.example.bitcoinwallet.common.toSatoshiLong
+import com.example.bitcoinwallet.domain.models.TransactionParams
 import com.example.bitcoinwallet.features.main.domain.MainInteractor
 import com.example.bitcoinwallet.features.main.domain.MainRepository
 import com.example.bitcoinwallet.features.main.domain.WalletRepository
@@ -77,7 +78,6 @@ class MainInteractorImpl(
             is Entity.Success -> {
                 try {
                     // Network settings
-                    val scriptType = ScriptType.P2WPKH
                     val network = BitcoinNetwork.SIGNET
 
                     // From address and private key
@@ -99,8 +99,8 @@ class MainInteractorImpl(
                     if (utxoList is Entity.Error) return Entity.Error(utxoList.message)
                     val utxos = (utxoList as Entity.Success).data
 
-                    // Fee
-                    val feeRates  = mainRepository.getFeeEstimates()
+                    // Fee rates
+                    val feeRates = mainRepository.getFeeEstimates()
 
                     // first 6 blocks or the smallest
                     val feeRateSatPerVb = feeRates[6] ?: feeRates.values.minOrNull() ?: 1.0
@@ -115,50 +115,31 @@ class MainInteractorImpl(
                         totalInput += Coin.valueOf(utxo.value)
                     }
 
-                    val inputCount  = selectedUtxos.size
-                    val outputCount = if (totalInput.value - sendAmount.value - roughFee1In > 0) 2 else 1
+                    val inputCount = selectedUtxos.size
+                    val outputCount =
+                        if (totalInput.value - sendAmount.value - roughFee1In > 0) 2 else 1
                     val vsize = inputCount * 68 + outputCount * 31 + 50
 
                     // Final fee
                     val fee = Coin.valueOf(ceil(feeRateSatPerVb * vsize).toLong())
 
-                    if (totalInput.subtract(sendAmount) < Coin.valueOf(roughFee1In)) return Entity.Error("Not enough coins to send transaction with fee")
-
-                    val tx = Transaction()
-
-                    // Recipient output
-                    tx.addOutput(sendAmount, toAddress)
-
-                    // Change output
-                    val changeSat = totalInput.subtract(sendAmount).subtract(fee)
-                    if (changeSat.isPositive) {
-                        tx.addOutput(changeSat, privateKeyWif.toAddress(scriptType, network))
-                    }
-
-                    // Utxos inputs
-                    selectedUtxos.forEach { u ->
-                        val txid = u.txid
-                        val vout = u.vout.toLong()
-                        val valSat = u.value
-
-                        val outPoint = TransactionOutPoint(
-                            vout, Sha256Hash.wrap(txid)
-                        )
-
-                        val scriptPubKey =
-                            ScriptBuilder.createOutputScript(addressParser.parseAddress(fromAddress))
-                        tx.addSignedInput(
-                            outPoint,
-                            scriptPubKey,
-                            Coin.valueOf(valSat),
-                            privateKeyWif,
-                            Transaction.SigHash.ALL,
-                            false
-                        )
-                    }
+                    if (totalInput.subtract(sendAmount) < Coin.valueOf(roughFee1In)) return Entity.Error(
+                        "Not enough coins to send transaction with fee"
+                    )
 
                     // Final hex
-                    val hex = formatHex(tx.serialize())
+                    val hex = generateTransaction(
+                        TransactionParams(
+                            privateKeyWif = privateKeyWif,
+                            toAddress = toAddress,
+                            fromAddress = addressParser.parseAddress(fromAddress),
+                            sendAmount = sendAmount,
+                            fee = fee,
+                            totalInput = totalInput,
+                            selectedUtxos = selectedUtxos,
+                            network = network
+                        )
+                    )
                     Log.d("MainInteractorImpl", hex)
 
                     // Api
@@ -191,6 +172,50 @@ class MainInteractorImpl(
         }
 
         return if (total >= amountNeeded) selected else emptyList()
+    }
+
+    private fun generateTransaction(transactionParams: TransactionParams): String {
+
+        val scriptType = ScriptType.P2WPKH
+        val tx = Transaction()
+
+        // Recipient output
+        tx.addOutput(transactionParams.sendAmount, transactionParams.toAddress)
+
+        // Change output
+        val changeSat = transactionParams.totalInput.subtract(transactionParams.sendAmount)
+            .subtract(transactionParams.fee)
+        if (changeSat.isPositive) {
+            tx.addOutput(
+                changeSat,
+                transactionParams.privateKeyWif.toAddress(scriptType, transactionParams.network)
+            )
+        }
+
+        // Utxos inputs
+        transactionParams.selectedUtxos.forEach { u ->
+            val txid = u.txid
+            val vout = u.vout.toLong()
+            val valSat = u.value
+
+            val outPoint = TransactionOutPoint(
+                vout, Sha256Hash.wrap(txid)
+            )
+
+            val scriptPubKey = ScriptBuilder.createOutputScript(transactionParams.fromAddress)
+            tx.addSignedInput(
+                outPoint,
+                scriptPubKey,
+                Coin.valueOf(valSat),
+                transactionParams.privateKeyWif,
+                Transaction.SigHash.ALL,
+                false
+            )
+        }
+
+        // Final hex
+        val hex = formatHex(tx.serialize())
+        return hex
     }
 
     override suspend fun getTxHistory(lastTxId: String?): Flow<Entity<List<TxHistoryItem>>> {

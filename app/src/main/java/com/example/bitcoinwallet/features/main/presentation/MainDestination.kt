@@ -58,27 +58,24 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.bitcoinwallet.R
 import com.example.bitcoinwallet.common.theme.BitcoinWalletTheme
 import com.example.bitcoinwallet.features.main.presentation.model.BalanceEntity
 import com.example.bitcoinwallet.features.main.presentation.model.MainEntity
 import com.example.bitcoinwallet.features.main.presentation.states.HistoryUiState
 import com.example.bitcoinwallet.features.main.presentation.states.MainScreenState
-import com.example.bitcoinwallet.features.main.presentation.states.TransactionEvent
+import com.example.bitcoinwallet.features.main.presentation.states.TransactionEventState
 import kotlinx.coroutines.Dispatchers
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
 fun MainDestination(
-    viewModelFactory: ViewModelProvider.Factory,
+    viewModel: MainViewModel
 ) {
-    val viewModel: MainViewModel = viewModel(factory = viewModelFactory)
     val state by viewModel.state.collectAsState(Dispatchers.Main.immediate)
     val historyState by viewModel.historyState.collectAsState(Dispatchers.Main.immediate)
 
-    var dialogEvent by remember { mutableStateOf<TransactionEvent?>(null) }
+    var dialogEvent by remember { mutableStateOf<TransactionEventState?>(null) }
     var isRefreshing by remember { mutableStateOf(false) }
 
     val pullRefreshState = rememberPullRefreshState(isRefreshing, {
@@ -135,7 +132,7 @@ fun MainScreen(
     state: MainScreenState,
     historyState: HistoryUiState,
     onSendClick: (amountBtcToSend: String, addressToSend: String) -> Unit,
-    dialogEvent: TransactionEvent?,
+    dialogEvent: TransactionEventState?,
     onDialogClose: () -> Unit,
     onLoadHistory: () -> Unit
 ) {
@@ -206,7 +203,7 @@ fun MainScreen(
 
 @Composable
 fun TxIdDialog(
-    event: TransactionEvent,
+    event: TransactionEventState,
     onDialogClose: () -> Unit,
 ) {
     val uriHandler = LocalUriHandler.current
@@ -214,13 +211,13 @@ fun TxIdDialog(
     AlertDialog(onDismissRequest = onDialogClose, title = {
         Text(
             text = when (event) {
-                is TransactionEvent.Success -> stringResource(R.string.transaction_sent)
-                is TransactionEvent.Failure -> stringResource(R.string.error_while_sending_transaction)
+                is TransactionEventState.Success -> stringResource(R.string.transaction_sent)
+                is TransactionEventState.Failure -> stringResource(R.string.error_while_sending_transaction)
             }
         )
     }, text = {
         when (event) {
-            is TransactionEvent.Success -> {
+            is TransactionEventState.Success -> {
                 Column {
                     Text(text = stringResource(R.string.your_transaction_id_is))
                     Spacer(Modifier.height(4.dp))
@@ -239,11 +236,11 @@ fun TxIdDialog(
                 }
             }
 
-            is TransactionEvent.Failure -> Text(event.message)
+            is TransactionEventState.Failure -> Text(event.message)
         }
     }, confirmButton = {
         TextButton(onClick = onDialogClose) {
-            Text(stringResource(R.string.ok))
+            Text(stringResource(R.string.send_more))
         }
     })
 }

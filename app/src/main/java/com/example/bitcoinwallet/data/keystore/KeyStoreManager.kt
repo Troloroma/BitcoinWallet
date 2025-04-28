@@ -1,4 +1,4 @@
-package com.example.bitcoinwallet.data.repository
+package com.example.bitcoinwallet.data.keystore
 
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties

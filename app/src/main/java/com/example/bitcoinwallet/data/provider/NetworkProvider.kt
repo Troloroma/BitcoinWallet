@@ -1,5 +1,7 @@
 package com.example.bitcoinwallet.data.provider
 
+import com.example.bitcoinwallet.data.factories.EnumConverterFactory
+import com.example.bitcoinwallet.data.factories.PlainTextConverterFactory
 import com.google.gson.GsonBuilder
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
