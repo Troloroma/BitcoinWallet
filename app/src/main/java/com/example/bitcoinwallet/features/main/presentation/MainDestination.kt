@@ -39,8 +39,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -64,6 +64,7 @@ import com.example.bitcoinwallet.features.main.presentation.model.BalanceEntity
 import com.example.bitcoinwallet.features.main.presentation.model.MainEntity
 import com.example.bitcoinwallet.features.main.presentation.states.HistoryUiState
 import com.example.bitcoinwallet.features.main.presentation.states.MainScreenState
+import com.example.bitcoinwallet.features.main.presentation.states.TransactionEvent
 import com.example.bitcoinwallet.features.main.presentation.states.TransactionEventState
 import kotlinx.coroutines.Dispatchers
 
@@ -75,25 +76,34 @@ fun MainDestination(
     val state by viewModel.state.collectAsState(Dispatchers.Main.immediate)
     val historyState by viewModel.historyState.collectAsState(Dispatchers.Main.immediate)
 
-    var dialogEvent by remember { mutableStateOf<TransactionEventState?>(null) }
-    var isRefreshing by remember { mutableStateOf(false) }
+    var isRefreshingScreen by remember { mutableStateOf(false) }
 
-    val pullRefreshState = rememberPullRefreshState(isRefreshing, {
-        isRefreshing = true
+    val pullRefreshState = rememberPullRefreshState(isRefreshingScreen, {
+        isRefreshingScreen = true
         viewModel.refresh()
-        isRefreshing = false
+        isRefreshingScreen = false
     })
 
-    LaunchedEffect(Unit) {
-        viewModel.txEvent.collect { event ->
-            dialogEvent = event
+    val eventState by viewModel.txEventState.collectAsState()
+
+    when (val currEventState = eventState) {
+        is TransactionEventState.Triggered -> {
+            TxIdDialog(event = currEventState.event, onDialogClose = {
+                viewModel.markTransactionEventHandled()
+            })
         }
+
+        is TransactionEventState.Handled -> {}
     }
 
     Scaffold(topBar = {
         CenterAlignedTopAppBar(
-            title = { Text(stringResource(R.string.bitcoin_wallet), style = MaterialTheme.typography.headlineSmall) },
-            colors = TopAppBarDefaults.topAppBarColors(
+            title = {
+                Text(
+                    stringResource(R.string.bitcoin_wallet),
+                    style = MaterialTheme.typography.headlineSmall
+                )
+            }, colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = MaterialTheme.colorScheme.primary,
                 titleContentColor = MaterialTheme.colorScheme.onPrimary
             )
@@ -112,12 +122,10 @@ fun MainDestination(
                 onSendClick = { amountBtcToSend, addressToSend ->
                     viewModel.sendCoins(amountBtcToSend, addressToSend)
                 },
-                dialogEvent = dialogEvent,
-                onDialogClose = { dialogEvent = null },
                 onLoadHistory = viewModel::getHistory
             )
             PullRefreshIndicator(
-                refreshing = isRefreshing,
+                refreshing = isRefreshingScreen,
                 state = pullRefreshState,
                 modifier = Modifier.align(Alignment.TopCenter)
             )
@@ -132,8 +140,6 @@ fun MainScreen(
     state: MainScreenState,
     historyState: HistoryUiState,
     onSendClick: (amountBtcToSend: String, addressToSend: String) -> Unit,
-    dialogEvent: TransactionEventState?,
-    onDialogClose: () -> Unit,
     onLoadHistory: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState()
@@ -167,7 +173,10 @@ fun MainScreen(
                     .fillMaxWidth()
                     .height(48.dp),
                     onClick = { showBottomSheet = true }) {
-                    Text(stringResource(R.string.history), style = MaterialTheme.typography.labelLarge)
+                    Text(
+                        stringResource(R.string.history),
+                        style = MaterialTheme.typography.labelLarge
+                    )
                 }
                 if (showBottomSheet) {
                     ModalBottomSheet(
@@ -187,15 +196,11 @@ fun MainScreen(
                         shape = MaterialTheme.shapes.large
                     ) {
                         HistoryScreen(
-                            historyState = historyState,
-                            onLoadMore = onLoadHistory
+                            historyState = historyState, onLoadMore = onLoadHistory
                         )
                     }
                 }
             }
-        }
-        dialogEvent?.let { event ->
-            TxIdDialog(event, onDialogClose)
         }
     }
 
@@ -203,40 +208,43 @@ fun MainScreen(
 
 @Composable
 fun TxIdDialog(
-    event: TransactionEventState,
+    event: TransactionEvent,
     onDialogClose: () -> Unit,
 ) {
     val uriHandler = LocalUriHandler.current
     val context = LocalContext.current
     AlertDialog(onDismissRequest = onDialogClose, title = {
         Text(
-            text = when (event) {
-                is TransactionEventState.Success -> stringResource(R.string.transaction_sent)
-                is TransactionEventState.Failure -> stringResource(R.string.error_while_sending_transaction)
+            text = when (event.type) {
+                is TransactionEvent.EventType.Success -> stringResource(R.string.transaction_sent)
+                is TransactionEvent.EventType.Failure -> stringResource(R.string.error_while_sending_transaction)
             }
         )
     }, text = {
-        when (event) {
-            is TransactionEventState.Success -> {
+        when (event.type) {
+            is TransactionEvent.EventType.Success -> {
                 Column {
                     Text(text = stringResource(R.string.your_transaction_id_is))
                     Spacer(Modifier.height(4.dp))
-                    Text(text = event.txId, style = MaterialTheme.typography.bodyLarge.copy(
-                        color = MaterialTheme.colorScheme.primary,
-                        textDecoration = TextDecoration.Underline
-                    ), modifier = Modifier
-                        .clickable {
-                            val url = context.getString(
-                                R.string.https_mempool_space_signet_tx,
-                                event.txId
-                            )
-                            uriHandler.openUri(url)
-                        }
-                        .padding(4.dp))
+                    Text(text = event.txId ?: stringResource(R.string.unknown),
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            color = MaterialTheme.colorScheme.primary,
+                            textDecoration = TextDecoration.Underline
+                        ),
+                        modifier = Modifier
+                            .clickable {
+                                val url = context.getString(
+                                    R.string.https_mempool_space_signet_tx, event.txId
+                                )
+                                uriHandler.openUri(url)
+                            }
+                            .padding(4.dp))
                 }
             }
 
-            is TransactionEventState.Failure -> Text(event.message)
+            is TransactionEvent.EventType.Failure -> Text(
+                event.message ?: stringResource(R.string.unknown)
+            )
         }
     }, confirmButton = {
         TextButton(onClick = onDialogClose) {
@@ -256,6 +264,12 @@ fun MainForm(
     val clipboardManager =
         remember { context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager }
 
+    val isSentButtonEnabled by remember {
+        derivedStateOf {
+            amountBtcToSend.isNotBlank() && addressToSend.isNotBlank()
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -265,7 +279,9 @@ fun MainForm(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text(text = stringResource(R.string.balance), style = MaterialTheme.typography.headlineSmall)
+        Text(
+            text = stringResource(R.string.balance), style = MaterialTheme.typography.headlineSmall
+        )
 
         Image(
             painter = painterResource(id = R.drawable.ic_bitcoin),
@@ -274,8 +290,9 @@ fun MainForm(
         )
 
         Text(
-            text = stringResource(R.string.tbtc, state.data.balance?.confirmedBalance.toString()),
-            style = MaterialTheme.typography.displayLarge
+            text = stringResource(
+                R.string.tbtc, state.data.balance?.confirmedBalance.toString()
+            ), style = MaterialTheme.typography.displayLarge
         )
         if (!state.data.balance?.unconfirmedBalance.equals("0")) {
             Text(
@@ -327,7 +344,7 @@ fun MainForm(
                     amountBtcToSend, addressToSend
                 )
             },
-            enabled = amountBtcToSend.isNotBlank() && addressToSend.isNotBlank(),
+            enabled = isSentButtonEnabled,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp),
@@ -348,7 +365,9 @@ fun MainForm(
                 .height(32.dp),
             shape = MaterialTheme.shapes.medium
         ) {
-            Text(text = stringResource(R.string.receive), style = MaterialTheme.typography.labelSmall)
+            Text(
+                text = stringResource(R.string.receive), style = MaterialTheme.typography.labelSmall
+            )
         }
     }
 }
@@ -360,8 +379,7 @@ fun MainScreenPreview() {
         MainScreen(modifier = Modifier.fillMaxSize(),
             state = MainScreenState.Success(
                 MainEntity(
-                    address = "123...asd",
-                    balance = BalanceEntity(
+                    address = "123...asd", balance = BalanceEntity(
                         "1",
                         "0.2",
                     )
@@ -369,7 +387,7 @@ fun MainScreenPreview() {
             ),
             historyState = HistoryUiState(),
             onSendClick = { _, _ -> },
-            dialogEvent = null,
-            {}, {})
+            {}
+        )
     }
 }

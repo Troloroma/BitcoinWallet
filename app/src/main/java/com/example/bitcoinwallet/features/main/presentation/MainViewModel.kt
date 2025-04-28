@@ -7,11 +7,10 @@ import com.example.bitcoinwallet.features.main.domain.MainInteractor
 import com.example.bitcoinwallet.features.main.presentation.model.MainEntity
 import com.example.bitcoinwallet.features.main.presentation.states.HistoryUiState
 import com.example.bitcoinwallet.features.main.presentation.states.MainScreenState
+import com.example.bitcoinwallet.features.main.presentation.states.TransactionEvent
 import com.example.bitcoinwallet.features.main.presentation.states.TransactionEventState
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOf
@@ -25,8 +24,8 @@ class MainViewModel @Inject constructor(
     private val _state = MutableStateFlow<MainScreenState>(MainScreenState.Loading)
     val state: StateFlow<MainScreenState> = _state
 
-    private val _txEvent = MutableSharedFlow<TransactionEventState>()
-    val txEvent: SharedFlow<TransactionEventState> = _txEvent
+    private val _txEventState = MutableStateFlow<TransactionEventState>(TransactionEventState.Handled)
+    val txEventState: StateFlow<TransactionEventState> = _txEventState
 
     private val _historyState = MutableStateFlow(HistoryUiState())
     val historyState: StateFlow<HistoryUiState> = _historyState
@@ -77,17 +76,31 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             when (val result = interactor.sendCoins(amountBtcToSend, addressToSend)) {
                 is Entity.Success -> {
-                    _txEvent.emit(TransactionEventState.Success(result.data))
+                    _txEventState.value = TransactionEventState.Triggered(
+                        TransactionEvent(
+                            type = TransactionEvent.EventType.Success,
+                            txId = result.data
+                        )
+                    )
                 }
 
                 is Entity.Error -> {
-                    _txEvent.emit(TransactionEventState.Failure(result.message))
+                    _txEventState.value = TransactionEventState.Triggered(
+                        TransactionEvent(
+                            type = TransactionEvent.EventType.Failure,
+                            message = result.message
+                        )
+                    )
                 }
             }
         }
     }
 
-    fun refreshHistory() {
+    fun markTransactionEventHandled() {
+        _txEventState.value = TransactionEventState.Handled
+    }
+
+    private fun refreshHistory() {
         _historyState.update { it.copy(items = emptyList(), isLoading = false, error = null) }
         lastTxId = null
         getHistory()

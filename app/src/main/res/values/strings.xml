@@ -18,4 +18,5 @@
     <string name="address_to_send">Address to send</string>
     <string name="address_was_copied">Address was copied</string>
     <string name="receive">Receive</string>
+    <string name="unknown">Unknown</string>
 </resources>
