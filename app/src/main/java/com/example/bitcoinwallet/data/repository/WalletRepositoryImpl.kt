@@ -16,9 +16,11 @@ import org.bitcoinj.crypto.DumpedPrivateKey
 import org.bitcoinj.crypto.ECKey
 import javax.inject.Inject
 
+/*** ONLY FOR TESTING ***/
+const val PRIVATE_WIF_KEY = "cUNT89DAYY8duCr2EXMnFy6bZnFQBTQqMj6LRLBzbeSVKXR2Dn1a"
+
 class WalletRepositoryImpl @Inject constructor(
-    private val keyStoreManager: KeyStoreManager,
-    private val dataStore: DataStore<Preferences>
+    private val keyStoreManager: KeyStoreManager, private val dataStore: DataStore<Preferences>
 ) : WalletRepository {
 
     private val network = BitcoinNetwork.SIGNET
@@ -29,6 +31,13 @@ class WalletRepositoryImpl @Inject constructor(
             val prefs = dataStore.data.first()
             val encrypted = prefs[wifKey]
             val wif: String = if (encrypted.isNullOrEmpty()) {
+                /***
+                 * Generating and saving a private wif key. For ease of testing,
+                 * so that when opening the application on a new device, you do not need to replenish the balance again,
+                 * the key generation is omitted, and the cUNT89DAYY8duCr2EXMnFy6bZnFQBTQqMj6LRLBzbeSVKXR2Dn1a key,
+                 * which already has funds, will be used.
+                 * ***/
+                /*
                 val ecKey = ECKey()
                 val rawWif = ecKey.getPrivateKeyAsWiF(network)
                 val cipherText = keyStoreManager.encrypt(rawWif.toByteArray())
@@ -37,6 +46,8 @@ class WalletRepositoryImpl @Inject constructor(
                 }
 
                 rawWif
+                */
+                PRIVATE_WIF_KEY
             } else {
                 val cipherBytes = Base64.decode(encrypted, Base64.DEFAULT)
 
@@ -46,9 +57,7 @@ class WalletRepositoryImpl @Inject constructor(
             val dumpedPriv = DumpedPrivateKey.fromBase58(network, wif)
             val ecKey = dumpedPriv.key
 
-            val address = ecKey
-                .toAddress(ScriptType.P2WPKH, network)
-                .toString()
+            val address = ecKey.toAddress(ScriptType.P2WPKH, network).toString()
             Log.d("address", address)
 
             return Entity.Success(WalletModel(address = address, privateKeyWif = wif))

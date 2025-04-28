@@ -1,4 +1,4 @@
-package com.example.bitcoinwallet.features.main.presentation
+package com.example.bitcoinwallet.features.main.presentation.states
 
 import com.example.bitcoinwallet.features.main.presentation.model.MainEntity
 

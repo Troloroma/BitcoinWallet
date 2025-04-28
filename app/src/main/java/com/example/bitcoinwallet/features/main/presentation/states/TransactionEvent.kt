@@ -1,4 +1,4 @@
-package com.example.bitcoinwallet.features.main.presentation
+package com.example.bitcoinwallet.features.main.presentation.states
 
 sealed class TransactionEvent {
     data class Success(val txId: String) : TransactionEvent()

@@ -5,6 +5,7 @@ import com.example.bitcoinwallet.common.Entity
 import com.example.bitcoinwallet.data.base.BaseRepository
 import com.example.bitcoinwallet.features.main.domain.MainRepository
 import com.example.bitcoinwallet.network.api.Api
+import com.example.bitcoinwallet.network.dto.TransactionResponse
 import com.example.bitcoinwallet.network.dto.UtxoResponse
 import com.example.bitcoinwallet.network.utils.models.ResponseStatus
 import kotlinx.coroutines.flow.Flow
@@ -43,13 +44,14 @@ class MainRepositoryImpl(
         return when (val response = safeApiSuspendResultNoResponse {
             apiService.sendTx(txHex = hex)
         }) {
-            is ResponseStatus.Success ->{
+            is ResponseStatus.Success -> {
                 Entity.Success(response.data as String)
             }
 
             is ResponseStatus.LocalError -> {
                 Entity.Error(response.message.ifEmpty { "Error" })
             }
+
             is ResponseStatus.ServerError -> {
                 Log.d("MainRepositoryImpl", hex)
                 Entity.Error(
@@ -57,5 +59,43 @@ class MainRepositoryImpl(
                 )
             }
         }
+    }
+
+    override suspend fun getTxHistory(
+        address: String,
+        lastTxId: String?
+    ): Flow<Entity<List<TransactionResponse>>> {
+        return flow {
+            when (val response = safeApiSuspendResultNoResponse {
+                if (lastTxId == null) apiService.getTransactions(address = address)
+                else apiService.getTransactions(
+                    address = address,
+                    lastSeenTxId = lastTxId
+                )
+            }) {
+                is ResponseStatus.Success -> {
+                    val txList: List<TransactionResponse> = response.data ?: emptyList()
+                    emit(Entity.Success(txList))
+                }
+
+                is ResponseStatus.LocalError -> {
+                    emit(Entity.Error(response.message.ifEmpty { "Error" }))
+                }
+
+                is ResponseStatus.ServerError -> {
+                    emit(
+                        Entity.Error(response.exception.message ?: "Error")
+                    )
+                }
+            }
+        }
+    }
+
+    override suspend fun getFeeEstimates(): Map<Int, Double> {
+        val response = safeApiSuspendResultNoResponse {
+            apiService.getFeeEstimates()
+        }
+        return response.getSuccessData() ?: emptyMap()
+
     }
 }
