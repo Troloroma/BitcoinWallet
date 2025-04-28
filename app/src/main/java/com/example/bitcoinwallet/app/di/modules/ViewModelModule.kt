@@ -2,6 +2,8 @@ package com.example.bitcoinwallet.app.di.modules
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.example.bitcoinwallet.data.factories.DaggerViewModelFactory
+import com.example.bitcoinwallet.data.factories.ViewModelKey
 import com.example.bitcoinwallet.features.main.presentation.MainViewModel
 import dagger.Binds
 import dagger.Module

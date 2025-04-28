@@ -1,4 +1,4 @@
-package com.example.bitcoinwallet.data.provider
+package com.example.bitcoinwallet.data.factories
 
 import com.google.gson.annotations.SerializedName
 import retrofit2.Converter

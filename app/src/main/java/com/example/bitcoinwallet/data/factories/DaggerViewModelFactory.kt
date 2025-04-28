@@ -1,4 +1,4 @@
-package com.example.bitcoinwallet.app.di.modules
+package com.example.bitcoinwallet.data.factories
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider

@@ -5,7 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStoreFile
-import com.example.bitcoinwallet.data.repository.KeyStoreManager
+import com.example.bitcoinwallet.data.keystore.KeyStoreManager
 import com.example.bitcoinwallet.data.repository.MainRepositoryImpl
 import com.example.bitcoinwallet.data.repository.WalletRepositoryImpl
 import com.example.bitcoinwallet.features.main.domain.MainRepository

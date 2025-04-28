@@ -9,12 +9,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.bitcoinwallet.app.app.App
 import com.example.bitcoinwallet.common.theme.BitcoinWalletTheme
 import com.example.bitcoinwallet.features.main.presentation.MainDestination
+import com.example.bitcoinwallet.features.main.presentation.MainViewModel
 import com.example.bitcoinwallet.navigation.Destinations
 import javax.inject.Inject
 
@@ -39,8 +41,9 @@ class MainActivity : ComponentActivity() {
                         startDestination = Destinations.MainGraph.route
                     ) {
                         composable(Destinations.MainGraph.route) {
+                            val viewModel: MainViewModel = viewModel(factory = viewModelFactory)
                             MainDestination(
-                                viewModelFactory = viewModelFactory,
+                                viewModel = viewModel,
                             )
                         }
                     }

@@ -4,13 +4,13 @@
     <string name="sent">Sent</string>
     <string name="from">From: %1$s</string>
     <string name="to">To: %1$s</string>
-    <string name="transaction_sent">Transaction sent!</string>
+    <string name="transaction_sent">Your funds have been sent!</string>
     <string name="error_while_sending_transaction">Error while sending transaction</string>
     <string name="your_transaction_id_is">"Your transaction ID is "</string>
     <string name="https_mempool_space_signet_tx">https://mempool.space/signet/tx/%1$s</string>
     <string name="bitcoin_wallet">Bitcoin Wallet</string>
     <string name="history">History</string>
-    <string name="ok">OK</string>
+    <string name="send_more">Send more</string>
     <string name="balance">Balance</string>
     <string name="tbtc">%1$s tBTC</string>
     <string name="_0_0001">0.0001</string>

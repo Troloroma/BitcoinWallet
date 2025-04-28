@@ -7,7 +7,7 @@ import com.example.bitcoinwallet.features.main.domain.MainInteractor
 import com.example.bitcoinwallet.features.main.presentation.model.MainEntity
 import com.example.bitcoinwallet.features.main.presentation.states.HistoryUiState
 import com.example.bitcoinwallet.features.main.presentation.states.MainScreenState
-import com.example.bitcoinwallet.features.main.presentation.states.TransactionEvent
+import com.example.bitcoinwallet.features.main.presentation.states.TransactionEventState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,8 +25,8 @@ class MainViewModel @Inject constructor(
     private val _state = MutableStateFlow<MainScreenState>(MainScreenState.Loading)
     val state: StateFlow<MainScreenState> = _state
 
-    private val _txEvent = MutableSharedFlow<TransactionEvent>()
-    val txEvent: SharedFlow<TransactionEvent> = _txEvent
+    private val _txEvent = MutableSharedFlow<TransactionEventState>()
+    val txEvent: SharedFlow<TransactionEventState> = _txEvent
 
     private val _historyState = MutableStateFlow(HistoryUiState())
     val historyState: StateFlow<HistoryUiState> = _historyState
@@ -77,11 +77,11 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             when (val result = interactor.sendCoins(amountBtcToSend, addressToSend)) {
                 is Entity.Success -> {
-                    _txEvent.emit(TransactionEvent.Success(result.data))
+                    _txEvent.emit(TransactionEventState.Success(result.data))
                 }
 
                 is Entity.Error -> {
-                    _txEvent.emit(TransactionEvent.Failure(result.message))
+                    _txEvent.emit(TransactionEventState.Failure(result.message))
                 }
             }
         }

@@ -4,16 +4,15 @@ import android.util.Base64
 import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.example.bitcoinwallet.common.Entity
+import com.example.bitcoinwallet.data.keystore.KeyStoreManager
 import com.example.bitcoinwallet.data.model.WalletModel
 import com.example.bitcoinwallet.features.main.domain.WalletRepository
 import kotlinx.coroutines.flow.first
 import org.bitcoinj.base.BitcoinNetwork
 import org.bitcoinj.base.ScriptType
 import org.bitcoinj.crypto.DumpedPrivateKey
-import org.bitcoinj.crypto.ECKey
 import javax.inject.Inject
 
 /*** ONLY FOR TESTING ***/
