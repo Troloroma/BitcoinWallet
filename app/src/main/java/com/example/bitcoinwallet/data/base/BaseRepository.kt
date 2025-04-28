@@ -84,10 +84,24 @@ open class BaseRepository {
 
 fun ResponseBody.parseError(): Error {
     return try {
-        val gson = Gson()
-        val type = object : TypeToken<Error>() {}.type
-        gson.fromJson(charStream(), type)
-    } catch (e: JsonSyntaxException) {
-        Error("", PARSE_ERROR, e.message)
+        val errorText = this.string()
+
+        if (errorText.trim().startsWith("{")) {
+            // JSON
+            val gson = Gson()
+            val type = object : TypeToken<Error>() {}.type
+            gson.fromJson(errorText, type)
+        } else {
+            // Plain text
+            Error(
+                code = PARSE_ERROR,
+                message = errorText,
+            )
+        }
+    } catch (e: Exception) {
+        Error(
+            code = PARSE_ERROR,
+            message = e.message,
+        )
     }
 }
